@@ -68,5 +68,20 @@ def verificar_lacunas(
 def perfil_continuo(
     camadas: list[CamadaIntervalo],
 ) -> bool:
+    ordenadas = sorted(
+        camadas,
+        key=lambda camada: camada.profundidade_inicial,
+    )
 
-    return len(verificar_lacunas(camadas)) == 0
+    if verificar_lacunas(ordenadas):
+        return False
+
+    for indice, camada in enumerate(ordenadas):
+        if existe_sobreposicao(
+            camada.profundidade_inicial,
+            camada.profundidade_final,
+            ordenadas[:indice],
+        ):
+            return False
+
+    return True

@@ -5,6 +5,7 @@ from app.calculations.estratigrafia.motor import (
     verificar_lacunas,
     perfil_continuo,
 )
+from app.calculations.estratigrafia.perfil import CamadaPerfil
 
 
 def test_espessura_145():
@@ -62,6 +63,54 @@ def test_perfil_com_lacuna():
     ]
 
     assert perfil_continuo(camadas) is False
+
+
+def test_perfil_com_sobreposicao_nao_e_continuo():
+    camadas = [
+        CamadaIntervalo(0.00, 1.00),
+        CamadaIntervalo(0.80, 1.50),
+    ]
+
+    assert perfil_continuo(camadas) is False
+
+
+def test_perfil_com_intervalos_adjacentes_e_continuo():
+    camadas = [
+        CamadaIntervalo(0.00, 0.45),
+        CamadaIntervalo(0.45, 1.45),
+    ]
+
+    assert verificar_lacunas(camadas) == []
+    assert perfil_continuo(camadas) is True
+
+
+def test_aterro_continua_quando_descricao_do_material_muda():
+    camadas = [
+        CamadaPerfil(
+            0.00,
+            0.45,
+            "ATERRO",
+            "argila silto-arenosa",
+        ),
+        CamadaPerfil(
+            0.45,
+            1.45,
+            "ATERRO",
+            "argila arenosa",
+        ),
+    ]
+
+    intervalos = [
+        CamadaIntervalo(
+            camada.profundidade_inicial,
+            camada.profundidade_final,
+        )
+        for camada in camadas
+    ]
+
+    assert camadas[0].descricao_material != camadas[1].descricao_material
+    assert camadas[0].origem == camadas[1].origem == "ATERRO"
+    assert perfil_continuo(intervalos) is True
 
 
 def test_detecta_lacuna():
