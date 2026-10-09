@@ -2,6 +2,7 @@
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.models.camada import Camada
 from app.models.furo import Furo
 from app.models.projeto import Projeto
 from app.schemas.furo import FuroCreate, FuroResponse, FuroUpdate
@@ -69,6 +70,34 @@ def atualizar_furo(
         )
 
     alteracoes = dados.model_dump(exclude_unset=True)
+
+    nova_profundidade_final = alteracoes.get(
+        "profundidade_final",
+        furo.profundidade_final,
+    )
+
+    if (
+        "profundidade_final" in alteracoes
+        and nova_profundidade_final is not None
+    ):
+        maior_profundidade_camada = (
+            db.query(Camada.profundidade_final)
+            .filter(Camada.furo_id == furo.id)
+            .order_by(Camada.profundidade_final.desc())
+            .first()
+        )
+
+        if (
+            maior_profundidade_camada is not None
+            and nova_profundidade_final < maior_profundidade_camada[0]
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "A profundidade final do furo não pode ser menor que "
+                    "a profundidade final de uma camada cadastrada."
+                ),
+            )
 
     for campo, valor in alteracoes.items():
         setattr(furo, campo, valor)

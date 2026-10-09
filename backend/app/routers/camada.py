@@ -8,6 +8,7 @@ from app.schemas.camada import (
     CamadaCreate,
     CamadaResponse,
     CamadaUpdate,
+    validar_intervalo_profundidade,
 )
 
 
@@ -47,6 +48,23 @@ def verificar_sobreposicao(
         )
 
 
+def verificar_limite_profundidade_furo(
+    furo: Furo,
+    profundidade_final: float,
+) -> None:
+    if (
+        furo.profundidade_final is not None
+        and profundidade_final > furo.profundidade_final
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "A profundidade final da camada não pode ultrapassar "
+                "a profundidade final do furo."
+            ),
+        )
+
+
 @router.post(
     "/",
     response_model=CamadaResponse,
@@ -63,6 +81,11 @@ def criar_camada(
             status_code=404,
             detail="Furo de sondagem nao encontrado.",
         )
+
+    verificar_limite_profundidade_furo(
+        furo,
+        dados.profundidade_final,
+    )
 
     verificar_sobreposicao(
         db=db,
@@ -161,11 +184,19 @@ def atualizar_camada(
         camada.profundidade_final,
     )
 
-    if nova_final <= nova_inicial:
+    try:
+        validar_intervalo_profundidade(nova_inicial, nova_final)
+    except ValueError as erro:
+        raise HTTPException(status_code=422, detail=str(erro)) from erro
+
+    furo = db.get(Furo, camada.furo_id)
+    if furo is None:
         raise HTTPException(
-            status_code=422,
-            detail="A profundidade final deve ser maior que a profundidade inicial.",
+            status_code=404,
+            detail="Furo de sondagem não encontrado.",
         )
+
+    verificar_limite_profundidade_furo(furo, nova_final)
 
     verificar_sobreposicao(
         db=db,

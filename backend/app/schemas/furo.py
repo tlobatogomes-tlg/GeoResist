@@ -19,7 +19,11 @@ class FuroBase(BaseModel):
     data_inicio: date | None = None
     data_termino: date | None = None
 
-    profundidade_final: float | None = Field(default=None, ge=0)
+    profundidade_final: float | None = Field(
+        default=None,
+        ge=0,
+        allow_inf_nan=False,
+    )
 
     sondador: str | None = None
     observacoes: str | None = None
@@ -48,7 +52,11 @@ class FuroUpdate(BaseModel):
     data_inicio: date | None = None
     data_termino: date | None = None
 
-    profundidade_final: float | None = Field(default=None, ge=0)
+    profundidade_final: float | None = Field(
+        default=None,
+        ge=0,
+        allow_inf_nan=False,
+    )
 
     sondador: str | None = None
     observacoes: str | None = None
